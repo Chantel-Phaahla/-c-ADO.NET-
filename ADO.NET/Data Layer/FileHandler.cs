@@ -1,0 +1,187 @@
+﻿using PRG282_Project.Business_Logic_Layer;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using PRG282_Project.Data_Layer;
+
+namespace PRG282_Project.Data_Layer
+{
+    // The FileHandler class handles all reading/writing to text files.
+    // It acts as the "data layer" of the program.
+    internal class FileHandler
+    {
+        // Path to the existing file, stores hero data
+        private static string filePath = "superheroes.txt";
+        //path to the summary report generated
+        private static string summaryfile = "Summary.txt";
+
+        // Save a hero to the text file
+        public static void SaveHero(Hero hero)
+        {
+            try
+            {
+                using (StreamWriter writer = new StreamWriter(filePath, true)) // 'true' appends to file
+                {
+                    writer.WriteLine($"{hero.ID},{hero.Name},{hero.Age},{hero.Superpower},{hero.ExamScore},{hero.Rank},{hero.ThreatLevel}");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error saving hero: " + ex.Message);
+            }
+        }
+      
+        // Load all heroes from the text file
+        public static List<Hero> LoadHeroes()
+        {
+            List<Hero> heroes = new List<Hero>();
+
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    string[] lines = File.ReadAllLines(filePath);
+
+                    foreach (string line in lines)
+                    {
+                        string[] parts = line.Split(',');
+
+                        // Ensure correct number of fields (7 total)
+                        if (parts.Length == 7)
+                        {
+                            Hero hero = new Hero
+                            {
+                                ID = int.Parse(parts[0]),
+                                Name = parts[1],
+                                Age = int.Parse(parts[2]),
+                                Superpower = parts[3],
+                                ExamScore = int.Parse(parts[4]),
+                                Rank = parts[5],
+                                ThreatLevel = parts[6]
+                            };
+                            heroes.Add(hero);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error reading heroes: " + ex.Message);
+            }
+
+            return heroes;
+        }
+
+
+
+        // Overwrite the entire hero file with a new list of heroes
+        private static void SaveAllHeroes(List<Hero> heroes)
+        {
+            try
+            {
+                using (StreamWriter writer = new StreamWriter(filePath, false)) // false = overwrite
+                {
+                    foreach (var hero in heroes)
+                    {
+                        writer.WriteLine($"{hero.ID},{hero.Name},{hero.Age},{hero.Superpower},{hero.ExamScore},{hero.Rank},{hero.ThreatLevel}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error saving heroes: " + ex.Message);
+            }
+        }
+
+        // Delete a hero by ID
+        public static void DeleteHero(int heroID)
+        {
+            try
+            {
+                var heroes = LoadHeroes();
+                var updatedHeroes = heroes.Where(h => h.ID != heroID).ToList();
+                SaveAllHeroes(updatedHeroes);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error deleting hero: " + ex.Message);
+            }
+        }
+
+        //Update an exixsting hero's information
+        public static bool UpdateHero(Hero updatedHero)
+        {
+            try
+            {
+                List<Hero> heroes = LoadHeroes();
+
+                bool found = false;
+
+                //Search for a matchng ID
+                for (int i = 0; i < heroes.Count; i++)
+                {
+                    if (heroes[i].ID == updatedHero.ID)
+                    {
+                        heroes[i] = updatedHero; // replace old the record
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found)
+                {
+                    SaveAllHeroes(heroes);
+                    return true; // update succeeded
+                }
+                else
+                {
+                    MessageBox.Show("Hero not found in the file!");
+                    return false; // update failed
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error updating hero: " + ex.Message);
+                return false;
+            }
+        }
+
+
+        // Write a summary report to a text file
+        public static void GenerateSummaryReport(Dictionary<string, string> summary)
+        {
+            try
+            {
+                using (StreamWriter writer = new StreamWriter(summaryfile, false))
+                {
+                    writer.WriteLine("Superhero Summary Report");
+                    writer.WriteLine(" ");
+
+                    writer.WriteLine($"Total Heroes: {summary["TotalHeroes"]}");
+                    writer.WriteLine($"Average Age: {summary["AverageAge"]}");
+                    writer.WriteLine($"Average Exam Score: {summary["AverageScore"]}");
+
+                    // Include Heroes per Rank
+                    writer.WriteLine($"Heroes per Rank: S: {summary["RankS"]}, A: {summary["RankA"]}, B: {summary["RankB"]}, C: {summary["RankC"]}");
+
+                    writer.WriteLine($"Report generated on: {DateTime.Now}");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error occurred when saving the summary report: {ex.Message}");
+                throw;
+            }
+        
+        }
+
+
+    }
+}
+
+    
+
